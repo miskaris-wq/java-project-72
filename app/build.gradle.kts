@@ -31,6 +31,20 @@ dependencies {
     // Для первого варианта с Jetty логгером:
     implementation("org.eclipse.jetty:jetty-server:11.0.15")
     implementation("org.eclipse.jetty:jetty-servlet:11.0.15")
+    // Use JUnit Jupiter for testing.
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation(platform("org.junit:junit-bom:5.9.1"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+
+    // Application dependencies
+    implementation("io.javalin:javalin:6.1.3")
+    implementation("io.javalin:javalin-rendering:6.1.3")
+    implementation("gg.jte:jte:3.1.9")
+    implementation("org.slf4j:slf4j-simple:2.0.7")
+
+    // Lombok
+    compileOnly("org.projectlombok:lombok:1.18.30")
+    annotationProcessor("org.projectlombok:lombok:1.18.30")
 }
 
 tasks {
