@@ -18,6 +18,7 @@ public final class App {
         String portStr = System.getenv().getOrDefault("PORT", "7070");
         int port = Integer.parseInt(portStr);
         Javalin app = getApp();
+        app.get("/", ctx -> ctx.result("Hello World"));
         app.start(port);
     }
 }
