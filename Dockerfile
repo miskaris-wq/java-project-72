@@ -1,23 +1,29 @@
-FROM eclipse-temurin:20-jdk
+# Стадия сборки
+FROM gradle:8.7-jdk21 AS builder
 
-ARG GRADLE_VERSION=8.2
+# Создаем рабочую директорию внутри контейнера
+WORKDIR /workspace
 
-RUN apt-get update && apt-get install -yq unzip
+# Копируем только необходимые для сборки файлы
+COPY app/build.gradle.kts .
+COPY app/settings.gradle.kts .
+COPY app/gradle ./gradle
+COPY app/src ./src
 
-RUN wget -q https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip \
-    && unzip gradle-${GRADLE_VERSION}-bin.zip \
-    && rm gradle-${GRADLE_VERSION}-bin.zip
+# Запускаем сборку (с кэшированием Gradle)
+RUN gradle --no-daemon shadowJar
 
-ENV GRADLE_HOME=/opt/gradle
-
-RUN mv gradle-${GRADLE_VERSION} ${GRADLE_HOME}
-
-ENV PATH=$PATH:$GRADLE_HOME/bin
+# Финальная стадия
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-COPY /app .
+# Копируем собранный JAR из стадии builder
+COPY --from=builder /workspace/build/libs/app.jar .
 
-RUN gradle installDist
+# Устанавливаем переменные окружения
+ENV PORT=8080
+EXPOSE $PORT
 
+# Команда запуска
 CMD ["java", "-jar", "app.jar"]
