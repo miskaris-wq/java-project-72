@@ -58,4 +58,20 @@ public class UrlRepository extends BaseRepository {
             return Optional.empty();
         }
     }
+    public Optional<Url> findById(Long id) throws SQLException {
+        var sql = "SELECT * FROM urls WHERE id = ?";
+        try (var conn = dataSource.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, id);
+            var resultSet = stmt.executeQuery();
+            if (resultSet.next()) {
+                var url = new Url();
+                url.setId(resultSet.getLong("id"));
+                url.setName(resultSet.getString("name"));
+                url.setCreatedAt(resultSet.getTimestamp("created_at"));
+                return Optional.of(url);
+            }
+            return Optional.empty();
+        }
+    }
 }

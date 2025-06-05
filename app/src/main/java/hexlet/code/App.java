@@ -15,6 +15,7 @@ import javax.sql.DataSource;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.Optional;
 
 public final class App {
     private static final Logger LOG = LoggerFactory.getLogger(App.class);
@@ -63,14 +64,12 @@ public final class App {
             }
         });
 
-
         // Страница списка URL с выводом flash и error сообщений
         app.get("/urls", ctx -> {
             try {
                 var repository = new UrlRepository(Database.getDataSource());
                 var urls = repository.findAll();
 
-                // Передаем ctx для вывода flash/error сообщений в шаблоне
                 ctx.render("urls/index.jte", Map.of("urls", urls, "ctx", ctx));
             } catch (SQLException e) {
                 LOG.error("Error fetching URL list", e);
@@ -78,9 +77,26 @@ public final class App {
             }
         });
 
+        // Страница конкретного URL
+        app.get("/urls/{id}", ctx -> {
+            try {
+                var id = ctx.pathParamAsClass("id", Long.class).get();
+                var repository = new UrlRepository(Database.getDataSource());
+                Optional<Url> urlOptional = repository.findById(id);
+
+                if (urlOptional.isPresent()) {
+                    ctx.render("urls/show.jte", Map.of("url", urlOptional.get(), "ctx", ctx));
+                } else {
+                    ctx.status(404).result("URL not found");
+                }
+            } catch (SQLException e) {
+                LOG.error("Error fetching URL", e);
+                ctx.status(500).result("Error retrieving the URL");
+            }
+        });
+
         return app;
     }
-
 
     private static TemplateEngine createTemplateEngine() {
         var classLoader = App.class.getClassLoader();
