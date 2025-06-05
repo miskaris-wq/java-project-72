@@ -4,15 +4,6 @@
 <h1>URL Analyzer</h1>
 
 @{
-    var flashMessage = ctx.consumeSessionAttribute("flash");
-    if (flashMessage != null) {
-}
-<div style="color: green;">@flashMessage</div>
-@{
-    }
-}
-
-@{
     var errorMessage = ctx.consumeSessionAttribute("error");
     if (errorMessage != null) {
 }

@@ -25,8 +25,12 @@ public final class App {
             config.fileRenderer(new JavalinJte(createTemplateEngine()));
         });
 
-        app.get("/", ctx -> ctx.render("index.jte", Map.of("ctx", ctx)));
+        // Главная страница с формой и выводом ошибки из сессии
+        app.get("/", ctx -> {
+            ctx.render("index.jte", Map.of("ctx", ctx));
+        });
 
+        // Обработка формы добавления URL
         app.post("/urls", ctx -> {
             var inputUrl = ctx.formParam("url");
 
@@ -44,26 +48,30 @@ public final class App {
 
                 if (repository.findByName(normalizedUrl).isPresent()) {
                     ctx.sessionAttribute("flash", "Страница уже существует");
+                    ctx.redirect("/urls");
                 } else {
                     var url = new Url();
                     url.setName(normalizedUrl);
                     repository.save(url);
                     ctx.sessionAttribute("flash", "Страница успешно добавлена");
+                    ctx.redirect("/urls");
                 }
             } catch (URISyntaxException | SQLException | RuntimeException e) {
                 LOG.error("Error while processing URL", e);
                 ctx.sessionAttribute("error", "Некорректный URL");
+                ctx.redirect("/");
             }
-
-            ctx.redirect("/");
         });
 
 
+        // Страница списка URL с выводом flash и error сообщений
         app.get("/urls", ctx -> {
             try {
                 var repository = new UrlRepository(Database.getDataSource());
                 var urls = repository.findAll();
-                ctx.render("urls/index.jte", Map.of("urls", urls));
+
+                // Передаем ctx для вывода flash/error сообщений в шаблоне
+                ctx.render("urls/index.jte", Map.of("urls", urls, "ctx", ctx));
             } catch (SQLException e) {
                 LOG.error("Error fetching URL list", e);
                 ctx.status(500).result("Error retrieving the list of URLs");
@@ -72,6 +80,7 @@ public final class App {
 
         return app;
     }
+
 
     private static TemplateEngine createTemplateEngine() {
         var classLoader = App.class.getClassLoader();
