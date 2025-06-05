@@ -31,7 +31,7 @@ public final class App {
             var inputUrl = ctx.formParam("url");
 
             if (inputUrl == null || inputUrl.trim().isEmpty()) {
-                ctx.sessionAttribute("error", "URL must not be empty");
+                ctx.sessionAttribute("error", "URL не должен быть пустым");
                 ctx.redirect("/");
                 return;
             }
@@ -43,20 +43,21 @@ public final class App {
                 String normalizedUrl = UrlUtils.normalizeUrl(trimmedUrl);
 
                 if (repository.findByName(normalizedUrl).isPresent()) {
-                    ctx.sessionAttribute("flash", "Page already exists");
+                    ctx.sessionAttribute("flash", "Страница уже существует");
                 } else {
                     var url = new Url();
                     url.setName(normalizedUrl);
                     repository.save(url);
-                    ctx.sessionAttribute("flash", "Page successfully added");
+                    ctx.sessionAttribute("flash", "Страница успешно добавлена");
                 }
             } catch (URISyntaxException | SQLException | RuntimeException e) {
                 LOG.error("Error while processing URL", e);
-                ctx.sessionAttribute("error", "Invalid URL");
+                ctx.sessionAttribute("error", "Некорректный URL");
             }
 
             ctx.redirect("/");
         });
+
 
         app.get("/urls", ctx -> {
             try {

@@ -6,9 +6,8 @@
 
 <ul>
 @for (var url : urls)
-    <li>@url.getName()</li>
+    <li>${url.getName()}</li>
 @endfor
-
 </ul>
 
 <p><a href="/">Go back</a></p>
