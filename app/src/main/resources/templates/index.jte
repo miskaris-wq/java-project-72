@@ -1,12 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Главная</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="container mt-5">
-    <h1 class="mb-4">Добро пожаловать!</h1>
-    <p class="lead">Это главная страница Javalin-приложения с шаблонизатором JTE.</p>
-</body>
-</html>
+@import io.javalin.http.Context
+@param Context ctx
+
+<h1>URL Analyzer</h1>
+
+@if (ctx.consumeSessionAttribute("flash") != null)
+    <div style="color: green;">
+        ${ctx.sessionAttribute("flash").toString()}
+    </div>
+@endif
+
+@if (ctx.consumeSessionAttribute("error") != null)
+    <div style="color: red;">
+        ${ctx.sessionAttribute("error").toString()}
+    </div>
+@endif
+
+<form action="/urls" method="post">
+    <label for="url">Enter URL:</label>
+    <input type="text" id="url" name="url" required>
+    <button type="submit">Submit</button>
+</form>
+
+<p><a href="/urls">Show all URLs</a></p>
