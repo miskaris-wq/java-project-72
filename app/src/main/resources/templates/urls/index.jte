@@ -5,9 +5,10 @@
 <h1>List of added URLs</h1>
 
 <ul>
-@for (url : urls)
-    <li>${url.getName()}</li>
-@end
+@for (var url : urls)
+    <li>@url.getName()</li>
+@endfor
+
 </ul>
 
 <p><a href="/">Go back</a></p>

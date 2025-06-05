@@ -3,17 +3,23 @@
 
 <h1>URL Analyzer</h1>
 
-@if (ctx.consumeSessionAttribute("flash") != null)
-    <div style="color: green;">
-        ${ctx.sessionAttribute("flash").toString()}
-    </div>
-@endif
+@{
+    var flashMessage = ctx.consumeSessionAttribute("flash");
+    if (flashMessage != null) {
+}
+<div style="color: green;">@flashMessage</div>
+@{
+    }
+}
 
-@if (ctx.consumeSessionAttribute("error") != null)
-    <div style="color: red;">
-        ${ctx.sessionAttribute("error").toString()}
-    </div>
-@endif
+@{
+    var errorMessage = ctx.consumeSessionAttribute("error");
+    if (errorMessage != null) {
+}
+<div style="color: red;">@errorMessage</div>
+@{
+    }
+}
 
 <form action="/urls" method="post">
     <label for="url">Enter URL:</label>
