@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -62,7 +63,7 @@ public final class App {
                     var url = new Url();
                     url.setName(normalizedUrl);
                     repository.save(url);
-                    ctx.sessionAttribute("flash", "Страница успешно добавлена");
+                    ctx.sessionAttribute("info", "Страница успешно добавлена");
                     ctx.redirect("/urls");
                 }
             } catch (URISyntaxException | SQLException | RuntimeException e) {
@@ -76,14 +77,33 @@ public final class App {
         app.get("/urls", ctx -> {
             try {
                 var repository = new UrlRepository(Database.getDataSource());
-                var urls = repository.findAll();
+                var urls = repository.findAll()
+                        .stream()
+                        .sorted(Comparator.comparing(Url::getId))
+                        .toList();
 
-                ctx.render("urls/index.jte", Map.of("urls", urls, "ctx", ctx));
+                var model = new HashMap<String, Object>();
+                model.put("urls", urls);
+                model.put("ctx", ctx);
+
+                // Добавим flash и info, если есть
+                String flash = ctx.consumeSessionAttribute("flash");
+                String info = ctx.consumeSessionAttribute("info");
+
+                if (flash != null) {
+                    model.put("flash", flash);
+                }
+                if (info != null) {
+                    model.put("info", info);
+                }
+
+                ctx.render("urls/index.jte", model);
             } catch (SQLException e) {
                 LOG.error("Error fetching URL list", e);
                 ctx.status(500).result("Error retrieving the list of URLs");
             }
         });
+
 
         // Страница конкретного URL
         app.get("/urls/{id}", ctx -> {

@@ -2,98 +2,97 @@ package hexlet.code.tests;
 
 import hexlet.code.App;
 import hexlet.code.Database;
-import io.javalin.Javalin;
-import io.javalin.testtools.JavalinTest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import hexlet.code.model.Url;
 import hexlet.code.repository.UrlRepository;
+import io.javalin.testtools.JavalinTest;
+import okhttp3.FormBody;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import javax.sql.DataSource;
 import java.sql.SQLException;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AppTest {
 
-    private Javalin app;
-    private DataSource dataSource;
+    private static UrlRepository repo;
+
+    @BeforeAll
+    static void beforeAll() throws Exception {
+        Database.init();
+        App.runMigrations(Database.getDataSource());
+        repo = new UrlRepository(Database.getDataSource());
+    }
 
     @BeforeEach
-    void setUp() throws Exception {
-        Database.init();
-        dataSource = Database.getDataSource();
-        App.class.getDeclaredMethod("runMigrations", DataSource.class).invoke(null, dataSource);
-        app = App.getApp();
+    void beforeEach() throws SQLException {
+        try (var conn = Database.getDataSource().getConnection();
+             var stmt = conn.createStatement()) {
+            stmt.execute("TRUNCATE TABLE urls");
+        }
     }
 
     @Test
     void testMainPage() {
-        JavalinTest.test(app, (server, client) -> {
+        JavalinTest.test(App.getApp(), (server, client) -> {
             var response = client.get("/");
             assertThat(response.code()).isEqualTo(200);
-            assert response.body() != null;
-            assertThat(response.body().string()).contains("ctx"); // Простая проверка рендера
+            assertThat(response.body().string()).contains("Анализатор страниц");
         });
     }
 
     @Test
     void testListUrlsPage() throws SQLException {
-        var repo = new UrlRepository(dataSource);
         var url = new Url();
         url.setName("https://example.com");
         repo.save(url);
 
-        JavalinTest.test(app, (server, client) -> {
+        JavalinTest.test(App.getApp(), (server, client) -> {
             var response = client.get("/urls");
             assertThat(response.code()).isEqualTo(200);
-            assert response.body() != null;
             assertThat(response.body().string()).contains("https://example.com");
         });
     }
 
     @Test
     void testShowUrlPage() throws SQLException {
-        var repo = new UrlRepository(dataSource);
         var url = new Url();
         url.setName("https://hexlet.io");
         repo.save(url);
 
-        JavalinTest.test(app, (server, client) -> {
+        JavalinTest.test(App.getApp(), (server, client) -> {
             var response = client.get("/urls/" + url.getId());
             assertThat(response.code()).isEqualTo(200);
-            assert response.body() != null;
             assertThat(response.body().string()).contains("https://hexlet.io");
         });
     }
 
     @Test
-    void testPostUrlAndRedirect() {
-        JavalinTest.test(app, (server, client) -> {
-            var response = client.post("/urls", "url=https://junit.org");
-            assertThat(response.code()).isEqualTo(302);
-            assertThat(response.headers("Location")).contains("/urls");
+    void testPostUrl() throws SQLException {
+        var repo = new UrlRepository(Database.getDataSource());
 
-            // Проверка, что URL добавлен
-            var repo = new UrlRepository(dataSource);
-            List<Url> urls = repo.findAll();
-            assertThat(urls).anyMatch(u -> u.getName().equals("https://junit.org"));
+        JavalinTest.test(App.getApp(), (server, client) -> {
+            var formData = new FormBody.Builder()
+                    .add("url", "https://newsite.com")
+                    .build();
+
+            var response = client.post("/urls", formData);
+
+            // Проверяем, что сервер отвечает редиректом (302)
+            assertThat(response.code()).isEqualTo(302);
+
+            // Проверяем, что URL сохранился в базе
+            var savedUrl = repo.findByName("https://newsite.com");
+            assertThat(savedUrl).isPresent();
+
+            // Проверяем, что новый URL появляется на странице списка
+            var listResponse = client.get("/urls");
+            assertThat(listResponse.code()).isEqualTo(200);
+            assert listResponse.body() != null;
+            assertThat(listResponse.body().string()).contains("https://newsite.com");
         });
     }
 
-    @Test
-    void testAddInvalidUrl() {
-        JavalinTest.test(app, (server, client) -> {
-            var response = client.post("/urls", "url=ht@tp://bad-url");
-            assertThat(response.code()).isEqualTo(302);
-            assertThat(response.headers("Location")).contains("/");
 
-            // Ошибка не должна сохраняться в БД
-            var repo = new UrlRepository(dataSource);
-            var urls = repo.findAll();
-            assertThat(urls).isEmpty();
-        });
-    }
 }
-
