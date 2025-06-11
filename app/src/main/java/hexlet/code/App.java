@@ -98,13 +98,13 @@ public final class App {
         return app;
     }
 
-    private static TemplateEngine createTemplateEngine() {
+    public static TemplateEngine createTemplateEngine() {
         var classLoader = App.class.getClassLoader();
         var codeResolver = new ResourceCodeResolver("templates", classLoader);
         return TemplateEngine.create(codeResolver, ContentType.Html);
     }
 
-    private static void runMigrations(DataSource dataSource) throws Exception {
+    public static void runMigrations(DataSource dataSource) throws Exception {
         try (var connection = dataSource.getConnection();
              var statement = connection.createStatement()) {
 

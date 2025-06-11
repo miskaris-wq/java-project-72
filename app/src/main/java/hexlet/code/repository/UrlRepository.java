@@ -4,6 +4,7 @@ import hexlet.code.model.Url;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,14 +17,21 @@ public class UrlRepository extends BaseRepository {
     }
 
     public void save(Url url) throws SQLException {
-        var sql = "INSERT INTO urls (name, created_at) VALUES (?, ?)";
-        try (var conn = dataSource.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
+        String sql = "INSERT INTO urls(name, created_at) VALUES (?, CURRENT_TIMESTAMP)";
+        try (var connection = dataSource.getConnection();
+             var stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, url.getName());
-            stmt.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
             stmt.executeUpdate();
+
+            try (var generatedKeys = stmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    long generatedId = generatedKeys.getLong(1);
+                    url.setId(generatedId);
+                }
+            }
         }
     }
+
 
     public List<Url> findAll() throws SQLException {
         var sql = "SELECT * FROM urls ORDER BY id DESC";

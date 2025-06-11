@@ -19,41 +19,34 @@ repositories {
 }
 
 dependencies {
-    implementation ("org.postgresql:postgresql:42.6.0")
+    // Основные зависимости
     implementation("io.javalin:javalin:6.1.3")
-    implementation("gg.jte:jte:3.1.6")
     implementation("io.javalin:javalin-rendering:6.1.3")
-
-    implementation("com.zaxxer:HikariCP:5.1.0")
-    implementation("com.h2database:h2:2.2.224")
-    implementation("org.postgresql:postgresql:42.7.3")
-
-    implementation("io.javalin:javalin:6.1.3")
+    implementation("gg.jte:jte:3.1.9")
     implementation("org.slf4j:slf4j-simple:2.0.12")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
     implementation("org.apache.commons:commons-lang3:3.14.0")
 
+    // JDBC, БД
+    implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("com.h2database:h2:2.2.224")
+    implementation("org.postgresql:postgresql:42.7.3")
+
+    // Веб
+    implementation("org.eclipse.jetty:jetty-servlet:11.0.15")
+
+    // Тестирование
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core:3.25.3")
-    implementation("org.slf4j:slf4j-simple:2.0.12")
-
-    implementation("org.eclipse.jetty:jetty-servlet:11.0.15")
-
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation(platform("org.junit:junit-bom:5.9.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-
-    // Application dependencies
-    implementation("io.javalin:javalin:6.1.3")
-    implementation("io.javalin:javalin-rendering:6.1.3")
-    implementation("gg.jte:jte:3.1.9")
-    implementation("org.slf4j:slf4j-simple:2.0.7")
+    testImplementation("io.javalin:javalin-testtools:6.1.3")
 
     // Lombok
     compileOnly("org.projectlombok:lombok:1.18.30")
     annotationProcessor("org.projectlombok:lombok:1.18.30")
 }
+
 
 tasks {
     shadowJar {
@@ -86,13 +79,3 @@ checkstyle {
     toolVersion = "10.12.4"
     configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
 }
-
-//sonar {
-//    properties {
-//        property("sonar.projectKey", "your-project-key")
-//        property("sonar.organization", "your-org")
-//        property("sonar.host.url", "https://sonarcloud.io")
-//        property("sonar.java.coveragePlugin", "jacoco")
-//        property("sonar.coverage.jacoco.xmlReportPaths", "${buildDir}/reports/jacoco/test/jacocoTestReport.xml")
-//    }
-//}
