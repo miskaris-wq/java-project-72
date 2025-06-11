@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,8 +29,15 @@ public final class App {
 
         // Главная страница с формой и выводом ошибки из сессии
         app.get("/", ctx -> {
-            ctx.render("index.jte", Map.of("ctx", ctx));
+            String error = ctx.consumeSessionAttribute("error"); // забираем и удаляем ошибку из сессии, если есть
+            Map<String, Object> model = new HashMap<>();
+            model.put("ctx", ctx);
+            if (error != null) {
+                model.put("error", error);
+            }
+            ctx.render("index.jte", model);  // вызываем render только один раз с полной моделью
         });
+
 
         // Обработка формы добавления URL
         app.post("/urls", ctx -> {
