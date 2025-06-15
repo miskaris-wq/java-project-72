@@ -1,10 +1,14 @@
 @import io.javalin.http.Context
+@import hexlet.code.model.UrlCheck
+@import java.util.Map
+@import java.time.format.DateTimeFormatter
 @import java.util.List
 @import hexlet.code.model.Url
 @param Context ctx
 @param List<Url> urls
 @param String flash
 @param String info
+@param Map<Long, UrlCheck> lastChecks
 
 
 <!DOCTYPE html>
@@ -94,8 +98,16 @@
                 <tr>
                     <td>${url.getId()}</td>
                     <td><a href="/urls/${url.getId()}">${url.getName()}</a></td>
-                    <td></td>
-                    <td></td>
+                    <td>
+                        @if (lastChecks.get(url.getId()) != null)
+                            ${lastChecks.get(url.getId()).getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))}
+                        @endif
+                    </td>
+                    <td>
+                        @if (lastChecks.get(url.getId()) != null)
+                            ${lastChecks.get(url.getId()).getStatusCode()}
+                        @endif
+                    </td>
                 </tr>
             @endfor
                 </tbody>

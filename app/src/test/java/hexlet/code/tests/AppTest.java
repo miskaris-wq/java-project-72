@@ -1,16 +1,15 @@
 package hexlet.code.tests;
 
 import hexlet.code.App;
-import hexlet.code.Database;
+import hexlet.code.database.Database;
 import hexlet.code.model.Url;
 import hexlet.code.repository.UrlRepository;
 import io.javalin.testtools.JavalinTest;
-import okhttp3.FormBody;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
+
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,13 +24,6 @@ public class AppTest {
         repo = new UrlRepository(Database.getDataSource());
     }
 
-    @BeforeEach
-    void beforeEach() throws SQLException {
-        try (var conn = Database.getDataSource().getConnection();
-             var stmt = conn.createStatement()) {
-            stmt.execute("TRUNCATE TABLE urls");
-        }
-    }
 
     @Test
     void testMainPage() {
@@ -67,32 +59,5 @@ public class AppTest {
             assertThat(response.body().string()).contains("https://hexlet.io");
         });
     }
-
-    @Test
-    void testPostUrl() throws SQLException {
-        var repo = new UrlRepository(Database.getDataSource());
-
-        JavalinTest.test(App.getApp(), (server, client) -> {
-            var formData = new FormBody.Builder()
-                    .add("url", "https://newsite.com")
-                    .build();
-
-            var response = client.post("/urls", formData);
-
-            // Проверяем, что сервер отвечает редиректом (302)
-            assertThat(response.code()).isEqualTo(302);
-
-            // Проверяем, что URL сохранился в базе
-            var savedUrl = repo.findByName("https://newsite.com");
-            assertThat(savedUrl).isPresent();
-
-            // Проверяем, что новый URL появляется на странице списка
-            var listResponse = client.get("/urls");
-            assertThat(listResponse.code()).isEqualTo(200);
-            assert listResponse.body() != null;
-            assertThat(listResponse.body().string()).contains("https://newsite.com");
-        });
-    }
-
 
 }

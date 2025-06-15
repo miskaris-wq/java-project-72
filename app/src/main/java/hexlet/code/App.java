@@ -3,17 +3,23 @@ package hexlet.code;
 import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.resolve.ResourceCodeResolver;
+import hexlet.code.database.Database;
 import hexlet.code.model.Url;
+import hexlet.code.model.UrlCheck;
+import hexlet.code.repository.UrlCheckRepository;
 import hexlet.code.repository.UrlRepository;
 import hexlet.code.utils.UrlUtils;
 import io.javalin.Javalin;
 import io.javalin.rendering.template.JavalinJte;
+import kong.unirest.Unirest;
+import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,19 +34,16 @@ public final class App {
             config.fileRenderer(new JavalinJte(createTemplateEngine()));
         });
 
-        // Главная страница с формой и выводом ошибки из сессии
         app.get("/", ctx -> {
-            String error = ctx.consumeSessionAttribute("error"); // забираем и удаляем ошибку из сессии, если есть
+            String error = ctx.consumeSessionAttribute("error");
             Map<String, Object> model = new HashMap<>();
             model.put("ctx", ctx);
             if (error != null) {
                 model.put("error", error);
             }
-            ctx.render("index.jte", model);  // вызываем render только один раз с полной моделью
+            ctx.render("index.jte", model);
         });
 
-
-        // Обработка формы добавления URL
         app.post("/urls", ctx -> {
             var inputUrl = ctx.formParam("url");
 
@@ -49,13 +52,10 @@ public final class App {
                 ctx.redirect("/");
                 return;
             }
-
             var trimmedUrl = inputUrl.trim();
             var repository = new UrlRepository(Database.getDataSource());
-
             try {
                 String normalizedUrl = UrlUtils.normalizeUrl(trimmedUrl);
-
                 if (repository.findByName(normalizedUrl).isPresent()) {
                     ctx.sessionAttribute("flash", "Страница уже существует");
                     ctx.redirect("/urls");
@@ -73,20 +73,57 @@ public final class App {
             }
         });
 
-        // Страница списка URL с выводом flash и error сообщений
+        app.post("/urls/{id}/checks", ctx -> {
+            long urlId = ctx.pathParamAsClass("id", Long.class).get();
+            var urlRepository = new UrlRepository(Database.getDataSource());
+            var urlOptional = urlRepository.findById(urlId);
+            if (urlOptional.isEmpty()) {
+                ctx.status(404).result("URL not found");
+                return;
+            }
+            var url = urlOptional.get();
+            try {
+                var response = Unirest.get(url.getName()).asString();
+                var document = Jsoup.parse(response.getBody());
+                var check = new UrlCheck();
+                check.setUrlId(urlId);
+                check.setStatusCode(response.getStatus());
+                check.setTitle(document.title());
+                check.setH1(document.selectFirst("h1") != null ? document.selectFirst("h1").text() : null);
+                check.setDescription(document.selectFirst("meta[name=description]") != null
+                        ? document.selectFirst("meta[name=description]").attr("content") : null);
+                check.setCreatedAt(LocalDateTime.now());
+                new UrlCheckRepository(Database.getDataSource()).save(check);
+                ctx.sessionAttribute("flash", "Проверка успешно выполнена");
+            } catch (Exception e) {
+                LOG.error("Ошибка при проверке сайта", e);
+                ctx.sessionAttribute("error", "Произошла ошибка при проверке сайта");
+            }
+
+            ctx.redirect("/urls/" + urlId);
+        });
+
         app.get("/urls", ctx -> {
             try {
-                var repository = new UrlRepository(Database.getDataSource());
-                var urls = repository.findAll()
+                var urlRepository = new UrlRepository(Database.getDataSource());
+                var urlCheckRepository = new UrlCheckRepository(Database.getDataSource());
+
+                var urls = urlRepository.findAll()
                         .stream()
                         .sorted(Comparator.comparing(Url::getId))
                         .toList();
 
+                // Собираем последние проверки для каждого URL
+                Map<Long, UrlCheck> lastChecks = new HashMap<>();
+                for (Url url : urls) {
+                    var lastCheck = urlCheckRepository.findLastCheckByUrlId(url.getId());
+                    lastCheck.ifPresent(check -> lastChecks.put(url.getId(), check));
+                }
                 var model = new HashMap<String, Object>();
                 model.put("urls", urls);
+                model.put("lastChecks", lastChecks);
                 model.put("ctx", ctx);
 
-                // Добавим flash и info, если есть
                 String flash = ctx.consumeSessionAttribute("flash");
                 String info = ctx.consumeSessionAttribute("info");
 
@@ -98,22 +135,31 @@ public final class App {
                 }
 
                 ctx.render("urls/index.jte", model);
+
             } catch (SQLException e) {
                 LOG.error("Error fetching URL list", e);
                 ctx.status(500).result("Error retrieving the list of URLs");
             }
         });
 
-
-        // Страница конкретного URL
         app.get("/urls/{id}", ctx -> {
             try {
                 var id = ctx.pathParamAsClass("id", Long.class).get();
-                var repository = new UrlRepository(Database.getDataSource());
-                Optional<Url> urlOptional = repository.findById(id);
+
+                var urlRepository = new UrlRepository(Database.getDataSource());
+                var checkRepository = new UrlCheckRepository(Database.getDataSource());
+
+                Optional<Url> urlOptional = urlRepository.findById(id);
 
                 if (urlOptional.isPresent()) {
-                    ctx.render("urls/show.jte", Map.of("url", urlOptional.get(), "ctx", ctx));
+                    var url = urlOptional.get();
+                    var checks = checkRepository.findAllByUrlId(id);
+
+                    ctx.render("urls/show.jte", Map.of(
+                            "url", url,
+                            "checks", checks,
+                            "ctx", ctx
+                    ));
                 } else {
                     ctx.status(404).result("URL not found");
                 }
@@ -122,7 +168,6 @@ public final class App {
                 ctx.status(500).result("Error retrieving the URL");
             }
         });
-
         return app;
     }
 

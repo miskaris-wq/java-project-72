@@ -1,7 +1,11 @@
 @import hexlet.code.model.Url
 @import java.time.format.DateTimeFormatter
+@import java.util.List
+@import hexlet.code.model.UrlCheck
+@param List<UrlCheck> checks
 @param Url url
 @param io.javalin.http.Context ctx
+
 
 <!DOCTYPE html><html><head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -66,6 +70,18 @@
                     <th class="col-2">Дата проверки</th>
                 </tr></thead>
                 <tbody>
+                <tbody>
+                @for (var check : checks)
+                <tr>
+                    <td>${check.getId()}</td>
+                    <td>${check.getStatusCode()}</td>
+                    <td>${check.getTitle() != null ? check.getTitle() : ""}</td>
+                    <td>${check.getH1() != null ? check.getH1() : ""}</td>
+                    <td>${check.getDescription() != null ? check.getDescription() : ""}</td>
+                    <td>${check.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))}</td>
+                </tr>
+                @endfor
+                </tbody>
 
                 </tbody>
             </table>

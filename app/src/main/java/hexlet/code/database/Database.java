@@ -1,4 +1,4 @@
-package hexlet.code;
+package hexlet.code.database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -17,14 +17,11 @@ public class Database {
                 "jdbc:h2:mem:project;DB_CLOSE_DELAY=-1;");
 
         if (jdbcUrl.startsWith("jdbc:h2:")) {
-            // H2 database configuration
             hikariConfig.setJdbcUrl(jdbcUrl);
             hikariConfig.setUsername("sa");
             hikariConfig.setPassword("");
         } else {
-            // PostgreSQL database configuration
             hikariConfig.setJdbcUrl(jdbcUrl);
-            // Additional PostgreSQL-specific settings if needed
             hikariConfig.setMaximumPoolSize(10);
         }
 
