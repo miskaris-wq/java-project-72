@@ -14,6 +14,16 @@ application {
     mainClass.set("hexlet.code.App")
 }
 
+sonar {
+    properties {
+        property("sonar.projectKey", "your_project_key")
+        property("sonar.host.url", "http://localhost:9000")
+        property("sonar.login", System.getenv("SONAR_TOKEN"))
+        property("sonar.coverage.jacoco.xmlReportPaths", "${buildDir}/reports/jacoco/test/jacocoTestReport.xml")
+    }
+}
+
+
 repositories {
     mavenCentral()
 }
@@ -66,6 +76,19 @@ tasks {
     }
 }
 
+tasks.withType<JavaCompile> {
+    options.release = 21
+}
+
+checkstyle {
+    toolVersion = "10.12.4"
+    configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
+}
+
+jacoco {
+    toolVersion = "0.8.10"
+}
+
 tasks.test {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
@@ -74,15 +97,7 @@ tasks.test {
 tasks.jacocoTestReport {
     dependsOn(tasks.test)
     reports {
-        xml.required = true
+        xml.required.set(true)
+        html.required.set(true)
     }
-}
-
-tasks.withType<JavaCompile> {
-    options.release = 21
-}
-
-checkstyle {
-    toolVersion = "10.12.4"
-    configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
 }

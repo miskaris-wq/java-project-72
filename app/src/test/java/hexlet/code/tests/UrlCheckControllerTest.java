@@ -34,6 +34,13 @@ public class UrlCheckControllerTest {
     void beforeAll() throws Exception {
         Database.init();
         App.runMigrations(Database.getDataSource());
+        try (var conn = Database.getDataSource().getConnection();
+             var stmt = conn.createStatement();
+             var rs = stmt.executeQuery("SHOW TABLES")) {
+            while (rs.next()) {
+                System.out.println("TABLE: " + rs.getString(1));
+            }
+        }
         app = App.getApp();
         app.start(7070);
 

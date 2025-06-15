@@ -187,9 +187,17 @@ public final class App {
             }
 
             var sql = new String(sqlStream.readAllBytes());
-            statement.execute(sql);
+
+            // Разбиваем по точке с запятой и выполняем каждое выражение отдельно
+            for (String query : sql.split(";")) {
+                var trimmed = query.trim();
+                if (!trimmed.isEmpty()) {
+                    statement.execute(trimmed);
+                }
+            }
         }
     }
+
 
     public static void main(String[] args) throws Exception {
         LOG.info("Initializing database...");
