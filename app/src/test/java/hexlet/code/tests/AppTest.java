@@ -48,7 +48,6 @@ public class AppTest {
         }
     }
 
-
     @Test
     void testMainPage() {
         JavalinTest.test(App.getApp(), (server, client) -> {
