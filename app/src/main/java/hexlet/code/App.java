@@ -113,7 +113,6 @@ public final class App {
                         .sorted(Comparator.comparing(Url::getId))
                         .toList();
 
-                // Собираем последние проверки для каждого URL
                 Map<Long, UrlCheck> lastChecks = new HashMap<>();
                 for (Url url : urls) {
                     var lastCheck = urlCheckRepository.findLastCheckByUrlId(url.getId());

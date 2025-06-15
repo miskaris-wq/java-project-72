@@ -2,15 +2,22 @@ package hexlet.code.database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import lombok.Getter;
 
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.SQLException;
 
 public class Database {
-    private static HikariDataSource dataSource;
+    @Getter
+    private static DataSource dataSource;
+    private static boolean customSourceSet = false;
 
     public static void init() throws SQLException, IOException {
+        if (customSourceSet) {
+            return; // если в тесте уже установили dataSource — не трогаем
+        }
+
         var hikariConfig = new HikariConfig();
 
         String jdbcUrl = System.getenv().getOrDefault("JDBC_DATABASE_URL",
@@ -25,23 +32,25 @@ public class Database {
             hikariConfig.setMaximumPoolSize(10);
         }
 
-        dataSource = new HikariDataSource(hikariConfig);
+        var hikariDataSource = new HikariDataSource(hikariConfig);
 
-        // Test the connection
-        try (var connection = dataSource.getConnection()) {
+        try (var connection = hikariDataSource.getConnection()) {
             if (!connection.isValid(1000)) {
                 throw new SQLException("Failed to establish database connection");
             }
         }
+
+        dataSource = hikariDataSource;
     }
 
-    public static DataSource getDataSource() {
-        return dataSource;
+    public static void setDataSource(DataSource customDataSource) {
+        dataSource = customDataSource;
+        customSourceSet = true;
     }
 
     public static void close() {
-        if (dataSource != null) {
-            dataSource.close();
+        if (dataSource instanceof HikariDataSource hikariSource) {
+            hikariSource.close();
         }
     }
 }

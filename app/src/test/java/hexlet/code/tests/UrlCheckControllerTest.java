@@ -11,6 +11,7 @@ import hexlet.code.repository.UrlRepository;
 import kong.unirest.Unirest;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +23,8 @@ import java.util.List;
 
 import io.javalin.Javalin;
 
+import javax.sql.DataSource;
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class UrlCheckControllerTest {
 
@@ -29,23 +32,27 @@ public class UrlCheckControllerTest {
     private MockWebServer mockWebServer;
     private UrlRepository urlRepository;
     private UrlCheckRepository urlCheckRepository;
+    private DataSource h2DataSource;
 
     @BeforeAll
     void beforeAll() throws Exception {
+        JdbcDataSource ds = new JdbcDataSource();
+        ds.setURL("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1");
+        ds.setUser("sa");
+        ds.setPassword("");
+
+        this.h2DataSource = ds;
+
+        Database.setDataSource(h2DataSource);
         Database.init();
-        App.runMigrations(Database.getDataSource());
-        try (var conn = Database.getDataSource().getConnection();
-             var stmt = conn.createStatement();
-             var rs = stmt.executeQuery("SHOW TABLES")) {
-            while (rs.next()) {
-                System.out.println("TABLE: " + rs.getString(1));
-            }
-        }
+
+        App.runMigrations(h2DataSource);
+
+        urlRepository = new UrlRepository(h2DataSource);
+        urlCheckRepository = new UrlCheckRepository(h2DataSource);
+
         app = App.getApp();
         app.start(7070);
-
-        urlRepository = new UrlRepository(Database.getDataSource());
-        urlCheckRepository = new UrlCheckRepository(Database.getDataSource());
 
         mockWebServer = new MockWebServer();
         mockWebServer.start();
@@ -69,26 +76,21 @@ public class UrlCheckControllerTest {
 
     @Test
     void testSuccessfulUrlCheck() throws Exception {
-        // Добавляем URL с адресом, который будет возвращать mockWebServer
         String testUrl = mockWebServer.url("/").toString();
         var url = new Url();
         url.setName(testUrl);
         urlRepository.save(url);
 
-        // Подготавливаем mock-ответ
         String body = "<html><head><title>Test Title</title><meta name=\"description\" "
                 + "content=\"Test description\"></head>"
                 + "<body><h1>Test H1 Header</h1></body></html>";
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(body));
 
-        // Выполняем POST-запрос на /urls/{id}/checks
         var response = Unirest.post("http://localhost:7070/urls/" + url.getId() + "/checks")
                 .asEmpty();
 
-        // Проверяем, что редирект был успешным (HTTP 302)
         assertThat(response.getStatus()).isEqualTo(302);
 
-        // Проверяем, что в базе появилась запись проверки для этого URL
         List<UrlCheck> checks = urlCheckRepository.findAllByUrlId(url.getId());
         assertThat(checks).hasSize(1);
 
@@ -102,7 +104,6 @@ public class UrlCheckControllerTest {
 
     @Test
     void testUrlCheckNotFoundUrl() throws Exception {
-        // Пробуем сделать проверку для несуществующего URL
         long fakeId = 9999L;
 
         var response = Unirest.post("http://localhost:7070/urls/" + fakeId + "/checks")
@@ -114,31 +115,25 @@ public class UrlCheckControllerTest {
 
     @Test
     void testUrlCheckWithServerError() throws Exception {
-        // 1. Добавляем URL с адресом mock-сервера
         String testUrl = mockWebServer.url("/").toString();
         var url = new Url();
         url.setName(testUrl);
         urlRepository.save(url);
 
-        // 2. Настраиваем mock-ответ с ошибкой 500
         mockWebServer.enqueue(new MockResponse().setResponseCode(500).setBody("Internal Server Error"));
 
-        // 3. Отправляем запрос на проверку URL
         var response = Unirest.post("http://localhost:7070/urls/" + url.getId() + "/checks")
                 .asEmpty();
 
-        // 4. Проверяем редирект (302)
         assertThat(response.getStatus()).isEqualTo(302);
 
-        // 5. Проверяем, что запись ВСЁ РАВНО создана (изменили ожидание!)
         List<UrlCheck> checks = urlCheckRepository.findAllByUrlId(url.getId());
-        assertThat(checks).hasSize(1);  // Теперь ожидаем 1 запись, а не 0
+        assertThat(checks).hasSize(1);
 
-        // 6. Проверяем, что в записи сохранён статус 500
         UrlCheck check = checks.get(0);
         assertThat(check.getStatusCode()).isEqualTo(500);
-        assertThat(check.getTitle()).isNullOrEmpty();  // Для ошибок title может быть null
-        assertThat(check.getH1()).isNullOrEmpty();    // или пустым
+        assertThat(check.getTitle()).isNullOrEmpty();
+        assertThat(check.getH1()).isNullOrEmpty();
         assertThat(check.getDescription()).isNullOrEmpty();
     }
 }

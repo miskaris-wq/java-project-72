@@ -6,22 +6,46 @@ import hexlet.code.model.Url;
 import hexlet.code.repository.UrlRepository;
 import io.javalin.testtools.JavalinTest;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
+import javax.sql.DataSource;
+
+import java.sql.SQLException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AppTest {
 
     private static UrlRepository repo;
+    private static DataSource testDataSource;
 
     @BeforeAll
-    static void beforeAll() throws Exception {
+    static void setUp() throws Exception {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;");
+        config.setUsername("sa");
+        config.setPassword("");
+
+        testDataSource = new HikariDataSource(config);
+
+        Database.setDataSource(testDataSource);
         Database.init();
-        App.runMigrations(Database.getDataSource());
-        repo = new UrlRepository(Database.getDataSource());
+        App.runMigrations(testDataSource);
+
+        repo = new UrlRepository(testDataSource);
+    }
+
+    @BeforeEach
+    void clearTables() throws SQLException {
+        try (var conn = testDataSource.getConnection();
+             var stmt = conn.createStatement()) {
+            stmt.executeUpdate("DELETE FROM url_checks");
+            stmt.executeUpdate("DELETE FROM urls");
+        }
     }
 
 
@@ -59,5 +83,4 @@ public class AppTest {
             assertThat(response.body().string()).contains("https://hexlet.io");
         });
     }
-
 }
