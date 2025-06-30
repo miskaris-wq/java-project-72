@@ -20,6 +20,9 @@ import org.junit.jupiter.api.AfterAll;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.javalin.Javalin;
 
@@ -33,13 +36,38 @@ public class UrlCheckControllerTest {
     private UrlRepository urlRepository;
     private UrlCheckRepository urlCheckRepository;
     private DataSource h2DataSource;
+    private TestData testData;
+
+    private static class TestData {
+        public CheckData successfulCheck;
+        public DbConfig dbConfig;
+
+        public static class CheckData {
+            public String html;
+            public String expectedTitle;
+            public String expectedH1;
+            public String expectedDescription;
+        }
+
+        public static class DbConfig {
+            public String url;
+            public String user;
+            public String password;
+        }
+    }
 
     @BeforeAll
     void beforeAll() throws Exception {
+        // Загрузка тестовых данных из JSON
+        ObjectMapper mapper = new ObjectMapper();
+        String json = Files.readString(Paths.get("src/test/resources/test-data.json"));
+        testData = mapper.readValue(json, TestData.class);
+
+        // Настройка базы данных
         JdbcDataSource ds = new JdbcDataSource();
-        ds.setURL("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1");
-        ds.setUser("sa");
-        ds.setPassword("");
+        ds.setURL(testData.dbConfig.url);
+        ds.setUser(testData.dbConfig.user);
+        ds.setPassword(testData.dbConfig.password);
 
         this.h2DataSource = ds;
 
@@ -81,10 +109,9 @@ public class UrlCheckControllerTest {
         url.setName(testUrl);
         urlRepository.save(url);
 
-        String body = "<html><head><title>Test Title</title><meta name=\"description\" "
-                + "content=\"Test description\"></head>"
-                + "<body><h1>Test H1 Header</h1></body></html>";
-        mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(body));
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(testData.successfulCheck.html));
 
         var response = Unirest.post("http://localhost:7070/urls/" + url.getId() + "/checks")
                 .asEmpty();
@@ -96,9 +123,9 @@ public class UrlCheckControllerTest {
 
         UrlCheck check = checks.get(0);
         assertThat(check.getStatusCode()).isEqualTo(200);
-        assertThat(check.getTitle()).isEqualTo("Test Title");
-        assertThat(check.getH1()).isEqualTo("Test H1 Header");
-        assertThat(check.getDescription()).isEqualTo("Test description");
+        assertThat(check.getTitle()).isEqualTo(testData.successfulCheck.expectedTitle);
+        assertThat(check.getH1()).isEqualTo(testData.successfulCheck.expectedH1);
+        assertThat(check.getDescription()).isEqualTo(testData.successfulCheck.expectedDescription);
         assertThat(check.getCreatedAt()).isNotNull();
     }
 

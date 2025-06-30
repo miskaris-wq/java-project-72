@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -28,16 +29,16 @@ import java.util.Optional;
 public final class App {
     private static final Logger LOG = LoggerFactory.getLogger(App.class);
 
-    public static Javalin getApp() {
+    public static Javalin getApp() throws SQLException {
         var app = Javalin.create(config -> {
             config.bundledPlugins.enableDevLogging();
             config.fileRenderer(new JavalinJte(createTemplateEngine()));
         });
 
         app.get("/", ctx -> {
-            String error = ctx.consumeSessionAttribute("error");
             Map<String, Object> model = new HashMap<>();
             model.put("ctx", ctx);
+            String error = ctx.consumeSessionAttribute("error");
             if (error != null) {
                 model.put("error", error);
             }
@@ -45,29 +46,30 @@ public final class App {
         });
 
         app.post("/urls", ctx -> {
-            var inputUrl = ctx.formParam("url");
+            String inputUrl = ctx.formParam("url");
 
             if (inputUrl == null || inputUrl.trim().isEmpty()) {
                 ctx.sessionAttribute("error", "URL не должен быть пустым");
                 ctx.redirect("/");
                 return;
             }
-            var trimmedUrl = inputUrl.trim();
-            var repository = new UrlRepository(Database.getDataSource());
+
             try {
-                String normalizedUrl = UrlUtils.normalizeUrl(trimmedUrl);
+                String normalizedUrl = UrlUtils.normalizeUrl(inputUrl.trim());
+                var repository = new UrlRepository(Database.getDataSource());
+
                 if (repository.findByName(normalizedUrl).isPresent()) {
                     ctx.sessionAttribute("flash", "Страница уже существует");
                     ctx.redirect("/urls");
-                } else {
-                    var url = new Url();
-                    url.setName(normalizedUrl);
-                    repository.save(url);
-                    ctx.sessionAttribute("info", "Страница успешно добавлена");
-                    ctx.redirect("/urls");
+                    return;
                 }
-            } catch (URISyntaxException | SQLException | RuntimeException e) {
-                LOG.error("Error while processing URL", e);
+
+                var url = new Url();
+                url.setName(normalizedUrl);
+                repository.save(url);
+                ctx.sessionAttribute("info", "Страница успешно добавлена");
+                ctx.redirect("/urls");
+            } catch (URISyntaxException e) {
                 ctx.sessionAttribute("error", "Некорректный URL");
                 ctx.redirect("/");
             }
@@ -77,13 +79,14 @@ public final class App {
             long urlId = ctx.pathParamAsClass("id", Long.class).get();
             var urlRepository = new UrlRepository(Database.getDataSource());
             var urlOptional = urlRepository.findById(urlId);
+
             if (urlOptional.isEmpty()) {
                 ctx.status(404).result("URL not found");
                 return;
             }
-            var url = urlOptional.get();
+
             try {
-                var response = Unirest.get(url.getName()).asString();
+                var response = Unirest.get(urlOptional.get().getName()).asString();
                 var document = Jsoup.parse(response.getBody());
                 var check = new UrlCheck();
                 check.setUrlId(urlId);
@@ -93,119 +96,98 @@ public final class App {
                 check.setDescription(document.selectFirst("meta[name=description]") != null
                         ? document.selectFirst("meta[name=description]").attr("content") : null);
                 check.setCreatedAt(LocalDateTime.now());
+
                 new UrlCheckRepository(Database.getDataSource()).save(check);
                 ctx.sessionAttribute("flash", "Проверка успешно выполнена");
             } catch (Exception e) {
                 LOG.error("Ошибка при проверке сайта", e);
                 ctx.sessionAttribute("error", "Произошла ошибка при проверке сайта");
             }
-
             ctx.redirect("/urls/" + urlId);
         });
 
         app.get("/urls", ctx -> {
-            try {
-                var urlRepository = new UrlRepository(Database.getDataSource());
-                var urlCheckRepository = new UrlCheckRepository(Database.getDataSource());
+            var urlRepository = new UrlRepository(Database.getDataSource());
+            var urlCheckRepository = new UrlCheckRepository(Database.getDataSource());
 
-                var urls = urlRepository.findAll()
-                        .stream()
-                        .sorted(Comparator.comparing(Url::getId))
-                        .toList();
+            var urls = urlRepository.findAll().stream()
+                    .sorted(Comparator.comparing(Url::getId))
+                    .toList();
 
-                Map<Long, UrlCheck> lastChecks = new HashMap<>();
-                for (Url url : urls) {
-                    var lastCheck = urlCheckRepository.findLastCheckByUrlId(url.getId());
-                    lastCheck.ifPresent(check -> lastChecks.put(url.getId(), check));
+            Map<Long, UrlCheck> lastChecks = new HashMap<>();
+            urls.forEach(u -> {
+                Optional<UrlCheck> lastCheck = null;
+                try {
+                    lastCheck = urlCheckRepository.findLastCheckByUrlId(u.getId());
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
                 }
-                var model = new HashMap<String, Object>();
-                model.put("urls", urls);
-                model.put("lastChecks", lastChecks);
-                model.put("ctx", ctx);
-
-                String flash = ctx.consumeSessionAttribute("flash");
-                String info = ctx.consumeSessionAttribute("info");
-
-                if (flash != null) {
-                    model.put("flash", flash);
+                if (lastCheck.isPresent()) {
+                    lastChecks.put(u.getId(), lastCheck.get());
                 }
-                if (info != null) {
-                    model.put("info", info);
-                }
+            });
 
-                ctx.render("urls/index.jte", model);
+            var model = new HashMap<String, Object>();
+            model.put("urls", urls);
+            model.put("lastChecks", lastChecks);
+            model.put("ctx", ctx);
 
-            } catch (SQLException e) {
-                LOG.error("Error fetching URL list", e);
-                ctx.status(500).result("Error retrieving the list of URLs");
+            String flash = ctx.consumeSessionAttribute("flash");
+            if (flash != null) {
+                model.put("flash", flash);
             }
+            String info = ctx.consumeSessionAttribute("info");
+            if (info != null) {
+                model.put("info", info);
+            }
+
+            ctx.render("urls/index.jte", model);
         });
 
         app.get("/urls/{id}", ctx -> {
-            try {
-                var id = ctx.pathParamAsClass("id", Long.class).get();
+            long id = ctx.pathParamAsClass("id", Long.class).get();
+            var urlRepository = new UrlRepository(Database.getDataSource());
+            var checkRepository = new UrlCheckRepository(Database.getDataSource());
 
-                var urlRepository = new UrlRepository(Database.getDataSource());
-                var checkRepository = new UrlCheckRepository(Database.getDataSource());
-
-                Optional<Url> urlOptional = urlRepository.findById(id);
-
-                if (urlOptional.isPresent()) {
-                    var url = urlOptional.get();
-                    var checks = checkRepository.findAllByUrlId(id);
-
-                    ctx.render("urls/show.jte", Map.of(
-                            "url", url,
-                            "checks", checks,
-                            "ctx", ctx
-                    ));
-                } else {
-                    ctx.status(404).result("URL not found");
-                }
-            } catch (SQLException e) {
-                LOG.error("Error fetching URL", e);
-                ctx.status(500).result("Error retrieving the URL");
+            var urlOptional = urlRepository.findById(id);
+            if (urlOptional.isEmpty()) {
+                ctx.status(404).result("URL not found");
+                return;
             }
+
+            var checks = checkRepository.findAllByUrlId(id);
+            ctx.render("urls/show.jte", Map.of(
+                    "url", urlOptional.get(),
+                    "checks", checks,
+                    "ctx", ctx
+            ));
         });
+
         return app;
     }
 
-    public static TemplateEngine createTemplateEngine() {
-        var classLoader = App.class.getClassLoader();
-        var codeResolver = new ResourceCodeResolver("templates", classLoader);
+    private static TemplateEngine createTemplateEngine() {
+        var codeResolver = new ResourceCodeResolver("templates", App.class.getClassLoader());
         return TemplateEngine.create(codeResolver, ContentType.Html);
     }
 
-    public static void runMigrations(DataSource dataSource) throws Exception {
+    public static void runMigrations(DataSource dataSource) throws SQLException, IOException {
         try (var connection = dataSource.getConnection();
              var statement = connection.createStatement()) {
-
-            var sqlStream = App.class.getClassLoader().getResourceAsStream("init.sql");
-            if (sqlStream == null) {
-                throw new IllegalStateException("init.sql not found in resources");
-            }
-
-            var sql = new String(sqlStream.readAllBytes());
-
-            // Разбиваем по точке с запятой и выполняем каждое выражение отдельно
+            var sql = new String(App.class.getClassLoader()
+                    .getResourceAsStream("init.sql").readAllBytes());
             for (String query : sql.split(";")) {
-                var trimmed = query.trim();
-                if (!trimmed.isEmpty()) {
-                    statement.execute(trimmed);
+                if (!query.trim().isEmpty()) {
+                    statement.execute(query.trim());
                 }
             }
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        LOG.info("Initializing database...");
+    public static void main(String[] args) throws SQLException, IOException {
+        LOG.info("Starting app");
         Database.init();
         runMigrations(Database.getDataSource());
-
-        var port = Integer.parseInt(System.getenv().getOrDefault("PORT", "7070"));
-        var app = getApp();
-
-        LOG.info("Starting Javalin app on port {}", port);
-        app.start(port);
+        getApp().start(Integer.parseInt(System.getenv().getOrDefault("PORT", "7070")));
     }
 }
