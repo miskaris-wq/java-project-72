@@ -3,45 +3,33 @@ package hexlet.code.repository;
 import hexlet.code.model.UrlCheck;
 
 import javax.sql.DataSource;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.sql.Types;
-import java.sql.Timestamp;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class UrlCheckRepository {
-    private final DataSource dataSource;
+public class UrlCheckRepository extends BaseRepository {
+
+    public UrlCheckRepository() {
+        super(); // использует BaseRepository.dataSource
+    }
 
     public UrlCheckRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
+        super(dataSource);
     }
 
     public List<UrlCheck> findAllByUrlId(Long urlId) throws SQLException {
         String sql = "SELECT * FROM url_checks WHERE url_id = ? ORDER BY created_at DESC";
 
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (var connection = ds.getConnection();
+             var statement = connection.prepareStatement(sql)) {
 
             statement.setLong(1, urlId);
 
-            try (ResultSet rs = statement.executeQuery()) {
-                List<UrlCheck> checks = new ArrayList<>();
+            try (var rs = statement.executeQuery()) {
+                var checks = new ArrayList<UrlCheck>();
                 while (rs.next()) {
-                    UrlCheck check = new UrlCheck();
-                    check.setId(rs.getLong("id"));
-                    check.setUrlId(rs.getLong("url_id"));
-                    check.setStatusCode(rs.getInt("status_code"));
-                    check.setTitle(rs.getString("title"));
-                    check.setH1(rs.getString("h1"));
-                    check.setDescription(rs.getString("description"));
-                    check.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-                    checks.add(check);
+                    checks.add(mapCheck(rs));
                 }
                 return checks;
             }
@@ -50,26 +38,16 @@ public class UrlCheckRepository {
 
     public Optional<UrlCheck> findLastCheckByUrlId(long urlId) throws SQLException {
         var sql = "SELECT * FROM url_checks WHERE url_id = ? ORDER BY created_at DESC LIMIT 1";
-        try (var conn = dataSource.getConnection();
+        try (var conn = ds.getConnection();
              var stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, urlId);
-            try (var rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    var check = new UrlCheck();
-                    check.setId(rs.getLong("id"));
-                    check.setUrlId(rs.getLong("url_id"));
-                    check.setStatusCode(rs.getInt("status_code"));
-                    check.setTitle(rs.getString("title"));
-                    check.setH1(rs.getString("h1"));
-                    check.setDescription(rs.getString("description"));
-                    check.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-                    return Optional.of(check);
-                }
+            var rs = stmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(mapCheck(rs));
             }
+            return Optional.empty();
         }
-        return Optional.empty();
     }
-
 
     public void save(UrlCheck check) throws SQLException {
         String sql = """
@@ -77,7 +55,7 @@ public class UrlCheckRepository {
             VALUES (?, ?, ?, ?, ?, ?)
             """;
 
-        try (var connection = dataSource.getConnection();
+        try (var connection = ds.getConnection();
              var statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             statement.setLong(1, check.getUrlId());
@@ -100,7 +78,7 @@ public class UrlCheckRepository {
     public List<UrlCheck> findByUrlId(long urlId) throws SQLException {
         String sql = "SELECT * FROM url_checks WHERE url_id = ? ORDER BY created_at DESC";
 
-        try (var connection = dataSource.getConnection();
+        try (var connection = ds.getConnection();
              var statement = connection.prepareStatement(sql)) {
 
             statement.setLong(1, urlId);
@@ -109,16 +87,7 @@ public class UrlCheckRepository {
             var checks = new ArrayList<UrlCheck>();
 
             while (resultSet.next()) {
-                var check = new UrlCheck();
-                check.setId(resultSet.getLong("id"));
-                check.setUrlId(resultSet.getLong("url_id"));
-                check.setStatusCode(resultSet.getInt("status_code"));
-                check.setTitle(resultSet.getString("title"));
-                check.setH1(resultSet.getString("h1"));
-                check.setDescription(resultSet.getString("description"));
-                check.setCreatedAt(resultSet.getTimestamp("created_at").toLocalDateTime());
-
-                checks.add(check);
+                checks.add(mapCheck(resultSet));
             }
 
             return checks;
@@ -133,26 +102,29 @@ public class UrlCheckRepository {
             LIMIT 1
             """;
 
-        try (var connection = dataSource.getConnection();
+        try (var connection = ds.getConnection();
              var statement = connection.prepareStatement(sql)) {
 
             statement.setLong(1, urlId);
             var resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
-                var check = new UrlCheck();
-                check.setId(resultSet.getLong("id"));
-                check.setUrlId(resultSet.getLong("url_id"));
-                check.setStatusCode(resultSet.getInt("status_code"));
-                check.setTitle(resultSet.getString("title"));
-                check.setH1(resultSet.getString("h1"));
-                check.setDescription(resultSet.getString("description"));
-                check.setCreatedAt(resultSet.getTimestamp("created_at").toLocalDateTime());
-
-                return check;
+                return mapCheck(resultSet);
             }
 
             return null;
         }
+    }
+
+    private UrlCheck mapCheck(ResultSet rs) throws SQLException {
+        var check = new UrlCheck();
+        check.setId(rs.getLong("id"));
+        check.setUrlId(rs.getLong("url_id"));
+        check.setStatusCode(rs.getInt("status_code"));
+        check.setTitle(rs.getString("title"));
+        check.setH1(rs.getString("h1"));
+        check.setDescription(rs.getString("description"));
+        check.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+        return check;
     }
 }

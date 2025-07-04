@@ -3,9 +3,15 @@ package hexlet.code.repository;
 import javax.sql.DataSource;
 
 public abstract class BaseRepository {
-    protected final DataSource dataSource;
+    public static DataSource dataSource; // устанавливается в App
+
+    protected final DataSource ds;
+
+    protected BaseRepository() {
+        this.ds = dataSource;
+    }
 
     protected BaseRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
+        this.ds = dataSource;
     }
 }
