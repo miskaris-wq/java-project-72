@@ -32,10 +32,14 @@ public class UrlsController {
         model.put("ctx", ctx);
 
         var flash = ctx.consumeSessionAttribute("flash");
-        if (flash != null) model.put("flash", flash);
+        if (flash != null) {
+            model.put("flash", flash);
+        }
 
         var info = ctx.consumeSessionAttribute("info");
-        if (info != null) model.put("info", info);
+        if (info != null) {
+            model.put("info", info);
+        }
 
         ctx.render("urls/index.jte", model);
     }
