@@ -68,7 +68,7 @@ public final class App {
     }
 
     private static void runMigrations(DataSource dataSource) throws IOException, SQLException {
-        var sql = readResourceFile("init.sql");
+        var sql = readResourceFile("schema.sql");
         try (var connection = dataSource.getConnection();
              var statement = connection.createStatement()) {
             for (String query : sql.split(";")) {
