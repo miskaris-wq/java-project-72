@@ -1,4 +1,4 @@
-package hexlet.code.tests.hexlet;
+package hexlet.code;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -20,8 +20,6 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import hexlet.code.App;
 
 class AppTest {
 
