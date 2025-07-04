@@ -49,7 +49,7 @@ public class AppTest {
     }
 
     @Test
-    void testMainPage() {
+    void testMainPage() throws SQLException {
         JavalinTest.test(App.getApp(), (server, client) -> {
             var response = client.get("/");
             assertThat(response.code()).isEqualTo(200);

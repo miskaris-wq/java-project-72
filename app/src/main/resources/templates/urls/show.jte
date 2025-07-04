@@ -50,7 +50,7 @@
                 </tr>
                 <tr>
                     <td>Дата создания</td>
-                    <td>${url.getCreatedAt().toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))}</td>
+                    <td>${url.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))}</td>
                 </tr>
                 </tbody>
             </table>

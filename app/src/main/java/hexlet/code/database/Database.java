@@ -15,7 +15,7 @@ public class Database {
 
     public static void init() throws SQLException, IOException {
         if (customSourceSet) {
-            return; // если в тесте уже установили dataSource — не трогаем
+            return;
         }
 
         var hikariConfig = new HikariConfig();

@@ -12,6 +12,7 @@ import hexlet.code.utils.UrlUtils;
 import io.javalin.Javalin;
 import io.javalin.rendering.template.JavalinJte;
 import kong.unirest.Unirest;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,13 +22,18 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 public final class App {
     private static final Logger LOG = LoggerFactory.getLogger(App.class);
+
+    private static int getPort() {
+        String port = System.getenv().getOrDefault("PORT", "3000");
+        return Integer.parseInt(port);
+    }
 
     public static Javalin getApp() throws SQLException {
         var app = Javalin.create(config -> {
@@ -110,21 +116,17 @@ public final class App {
             var urlRepository = new UrlRepository(Database.getDataSource());
             var urlCheckRepository = new UrlCheckRepository(Database.getDataSource());
 
-            var urls = urlRepository.findAll().stream()
-                    .sorted(Comparator.comparing(Url::getId))
-                    .toList();
+            var urls = urlRepository.findAllOrderedById();
 
             Map<Long, UrlCheck> lastChecks = new HashMap<>();
             urls.forEach(u -> {
-                Optional<UrlCheck> lastCheck = null;
+                Optional<UrlCheck> lastCheck;
                 try {
                     lastCheck = urlCheckRepository.findLastCheckByUrlId(u.getId());
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
-                if (lastCheck.isPresent()) {
-                    lastChecks.put(u.getId(), lastCheck.get());
-                }
+                lastCheck.ifPresent(urlCheck -> lastChecks.put(u.getId(), urlCheck));
             });
 
             var model = new HashMap<String, Object>();

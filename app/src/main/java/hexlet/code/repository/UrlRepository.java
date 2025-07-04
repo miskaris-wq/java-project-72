@@ -3,6 +3,7 @@ package hexlet.code.repository;
 import hexlet.code.model.Url;
 
 import javax.sql.DataSource;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -80,6 +81,28 @@ public class UrlRepository extends BaseRepository {
             }
             return Optional.empty();
         }
+    }
+
+    public List<Url> findAllOrderedById() throws SQLException {
+        var sql = "SELECT * FROM urls ORDER BY id ASC";  // или DESC, в зависимости от потребностей
+        try (var conn = dataSource.getConnection();
+             var stmt = conn.prepareStatement(sql);
+             var rs = stmt.executeQuery()) {
+
+            var urls = new ArrayList<Url>();
+            while (rs.next()) {
+                urls.add(mapUrl(rs));
+            }
+            return urls;
+        }
+    }
+
+    private Url mapUrl(ResultSet rs) throws SQLException {
+        Url url = new Url();
+        url.setId(rs.getLong("id"));
+        url.setName(rs.getString("name"));
+        url.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+        return url;
     }
 
 }
