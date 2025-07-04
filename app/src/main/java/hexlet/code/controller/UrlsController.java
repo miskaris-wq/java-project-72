@@ -91,6 +91,17 @@ public class UrlsController {
         model.put("checks", checks);
         model.put("ctx", ctx);
 
+        var flash = ctx.consumeSessionAttribute("flash");
+        if (flash != null) {
+            model.put("flash", flash);
+        }
+
+        var error = ctx.consumeSessionAttribute("error");
+        if (error != null) {
+            model.put("error", error);
+        }
+
         ctx.render("urls/show.jte", model);
     }
+
 }

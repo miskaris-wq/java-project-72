@@ -17,7 +17,7 @@ public class UrlChecksController {
     public static void check(Context ctx) throws SQLException {
         long urlId = ctx.pathParamAsClass("id", Long.class).get();
 
-        var urlRepository = new UrlRepository(UrlRepository.dataSource);
+        var urlRepository = new UrlRepository();    // не передаем dataSource
         var urlOptional = urlRepository.findById(urlId);
 
         if (urlOptional.isEmpty()) {
@@ -39,11 +39,13 @@ public class UrlChecksController {
                     ? document.selectFirst("meta[name=description]").attr("content") : null);
             check.setCreatedAt(LocalDateTime.now());
 
-            new UrlCheckRepository(UrlCheckRepository.dataSource).save(check);
-            ctx.sessionAttribute("flash", "Проверка успешно выполнена");
+            var checkRepository = new UrlCheckRepository();  // не передаем dataSource
+            checkRepository.save(check);
+
+            ctx.sessionAttribute("flash", "Страница успешно проверена");
         } catch (Exception e) {
             log.error("Ошибка при проверке сайта", e);
-            ctx.sessionAttribute("error", "Произошла ошибка при проверке сайта");
+            ctx.sessionAttribute("error", "Некорректный адрес");
         }
 
         ctx.redirect("/urls/" + urlId);
