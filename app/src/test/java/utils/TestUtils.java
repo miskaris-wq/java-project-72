@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TestUtils {
+public final class TestUtils {
 
     public static void addUrl(HikariDataSource ds, String url) throws SQLException {
         String sql = "INSERT INTO urls (name, created_at) VALUES (?, CURRENT_TIMESTAMP)";
