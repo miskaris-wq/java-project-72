@@ -1,9 +1,8 @@
-_### Hexlet tests and linter status:
+### Hexlet tests and linter status:
 [![Actions Status](https://github.com/miskaris-wq/java-project-72/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/miskaris-wq/java-project-72/actions)
 
 
-[![Maintainability](https://api.codeclimate.com/v1/badges/e8f7dae9a71a67aea0c5/maintainability)](https://codeclimate.com/github/miskaris-wq/java-project-71/maintainability)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/e8f7dae9a71a67aea0c5/test_coverage)](https://codeclimate.com/github/miskaris-wq/java-project-71/test_coverage)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=miskaris-wq_java-project-72&metric=coverage)](https://sonarcloud.io/summary/new_code?id=miskaris-wq_java-project-72)
 
 # java-project-72: Hexlet Project - Pages Analyzer
 
