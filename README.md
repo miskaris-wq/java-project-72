@@ -1,4 +1,4 @@
-### Hexlet tests and linter status:
+_### Hexlet tests and linter status:
 [![Actions Status](https://github.com/miskaris-wq/java-project-72/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/miskaris-wq/java-project-72/actions)
 
 
@@ -86,5 +86,5 @@ The project has no external dependencies other than the standard Java library.
 
 ## Acknowledgments
 
-Thanks to Hexlet for the educational program and the provided platform for developing this project.
+Thanks to Hexlet for the educational program and the provided platform for developing this project._
 
