@@ -4,7 +4,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("io.freefair.lombok") version "8.6"
     id("checkstyle")
-    id("org.sonarqube") version "6.2.0.5505"
+    id("org.sonarqube") version "4.4.1.3373"
 }
 
 group = "hexlet.code"
@@ -30,7 +30,6 @@ repositories {
 }
 
 dependencies {
-
     //Добавление зависимости Unirest
     implementation ("com.konghq:unirest-java:3.13.6")
 
