@@ -17,7 +17,7 @@ public class UrlChecksController {
     public static void check(Context ctx) throws SQLException {
         long urlId = ctx.pathParamAsClass("id", Long.class).get();
 
-        var urlRepository = new UrlRepository();    // не передаем dataSource
+        var urlRepository = new UrlRepository();
         var urlOptional = urlRepository.findById(urlId);
 
         if (urlOptional.isEmpty()) {
@@ -39,7 +39,7 @@ public class UrlChecksController {
                     ? document.selectFirst("meta[name=description]").attr("content") : null);
             check.setCreatedAt(LocalDateTime.now());
 
-            var checkRepository = new UrlCheckRepository();  // не передаем dataSource
+            var checkRepository = new UrlCheckRepository();
             checkRepository.save(check);
 
             ctx.sessionAttribute("flash", "Страница успешно проверена");

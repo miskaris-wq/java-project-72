@@ -34,16 +34,13 @@ public final class App {
     }
 
     public static Javalin getApp() throws IOException, SQLException {
-        // Настройка Hikari
         var hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl(getDatabaseUrl());
         var dataSource = new HikariDataSource(hikariConfig);
         BaseRepository.dataSource = dataSource;
 
-        // Выполнение миграций
         runMigrations(dataSource);
 
-        // Создание приложения
         var app = Javalin.create(config -> {
             config.bundledPlugins.enableDevLogging();
             config.fileRenderer(new JavalinJte(createTemplateEngine()));
@@ -51,7 +48,6 @@ public final class App {
 
         app.before(ctx -> ctx.contentType("text/html; charset=utf-8"));
 
-        // Роуты
         app.get("/", RootController::welcome);
         app.get("/urls", UrlsController::list);
         app.post("/urls", UrlsController::create);

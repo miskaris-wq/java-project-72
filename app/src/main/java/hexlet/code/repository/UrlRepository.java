@@ -13,16 +13,16 @@ import java.util.Optional;
 public final class UrlRepository extends BaseRepository {
 
     public UrlRepository() {
-        super(); // берет dataSource из BaseRepository.dataSource
+        super();
     }
 
     public UrlRepository(DataSource dataSource) {
-        super(dataSource); // можно при желании передавать вручную
+        super(dataSource);
     }
 
     public void save(Url url) throws SQLException {
         String sql = "INSERT INTO urls(name, created_at) VALUES (?, CURRENT_TIMESTAMP)";
-        try (var connection = ds.getConnection(); // <--- используем ds, а не dataSource
+        try (var connection = ds.getConnection();
              var stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, url.getName());
             stmt.executeUpdate();
