@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-final public class UrlsControllerTest {
+public final class UrlsControllerTest {
 
     private static MockWebServer mockServer;
     private Javalin app;

@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-final class RootControllerTest {
+public final class RootControllerTest {
 
     private Javalin app;
     private HikariDataSource dataSource;

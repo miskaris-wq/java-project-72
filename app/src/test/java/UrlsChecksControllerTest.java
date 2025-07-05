@@ -24,7 +24,7 @@ import hexlet.code.App;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-final class UrlsChecksControllerTest {
+public final class UrlsChecksControllerTest {
 
     private static MockWebServer mockServer;
     private Javalin app;
