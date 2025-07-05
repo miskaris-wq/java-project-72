@@ -67,7 +67,7 @@ public final class App {
         return TemplateEngine.create(codeResolver, ContentType.Html);
     }
 
-    private static void runMigrations(DataSource dataSource) throws IOException, SQLException {
+    public static void runMigrations(DataSource dataSource) throws IOException, SQLException {
         var sql = readResourceFile("schema.sql");
         try (var connection = dataSource.getConnection();
              var statement = connection.createStatement()) {

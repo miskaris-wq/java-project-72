@@ -58,6 +58,9 @@ dependencies {
     testImplementation("org.assertj:assertj-core:3.25.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("io.javalin:javalin-testtools:6.1.3")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testImplementation("org.mockito:mockito-core:5.5.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.5.0")
 
     // Lombok
     compileOnly("org.projectlombok:lombok:1.18.30")
