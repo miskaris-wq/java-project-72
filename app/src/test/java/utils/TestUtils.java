@@ -39,7 +39,8 @@ public class TestUtils {
 
     public static void addUrlCheck(HikariDataSource dataSource, long urlId) throws SQLException {
         String sql = "INSERT INTO url_checks (url_id, status_code, title, description, h1, created_at) "
-                + "VALUES (?, 200, 'Test page', 'statements of great people', 'Do not expect a miracle, miracles yourself!', "
+                + "VALUES (?, 200, 'Test page', 'statements of great people', "
+                + "'Do not expect a miracle, miracles yourself!', "
                 + "CURRENT_TIMESTAMP)";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
