@@ -17,6 +17,7 @@ out/
 !**/src/test/**/out/
 
 ### Eclipse ###
+/jte-classes
 .apt_generated
 .classpath
 .factorypath
