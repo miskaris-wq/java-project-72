@@ -10,21 +10,20 @@ import io.javalin.http.Context;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
+
 public class UrlsController {
+
 
     public static void list(Context ctx) throws SQLException {
         var urlRepository = new UrlRepository();
         var urlCheckRepository = new UrlCheckRepository();
 
         var urls = urlRepository.findAllOrderedById();
-        var lastChecks = new HashMap<Long, UrlCheck>();
 
-        for (var url : urls) {
-            Optional<UrlCheck> lastCheck = urlCheckRepository.findLastCheckByUrlId(url.getId());
-            lastCheck.ifPresent(check -> lastChecks.put(url.getId(), check));
-        }
+        Map<Long, UrlCheck> lastChecks = urlCheckRepository.findLatestChecks();
 
         var model = new HashMap<String, Object>();
         model.put("urls", urls);

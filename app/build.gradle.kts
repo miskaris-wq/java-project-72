@@ -2,7 +2,6 @@ plugins {
     application
     jacoco
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("io.freefair.lombok") version "8.6"
     id("checkstyle")
     id("org.sonarqube") version "4.4.1.3373"
 }

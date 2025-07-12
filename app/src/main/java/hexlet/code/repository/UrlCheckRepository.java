@@ -9,9 +9,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public final class UrlCheckRepository extends BaseRepository {
 
@@ -23,6 +21,20 @@ public final class UrlCheckRepository extends BaseRepository {
         super(dataSource);
     }
 
+    public Map<Long, UrlCheck> findLatestChecks() throws SQLException {
+        var sql = "SELECT DISTINCT ON (url_id) * from url_checks order by url_id DESC, id DESC";
+        try (var connection = ds.getConnection();
+             var statement = connection.prepareStatement(sql)) {
+
+            try (var rs = statement.executeQuery()) {
+                var checks = new HashMap<Long, UrlCheck>();
+                while (rs.next()) {
+                    checks.put(rs.getLong("url_id"), mapCheck(rs));
+                }
+                return checks;
+            }
+        }
+    }
     public List<UrlCheck> findAllByUrlId(Long urlId) throws SQLException {
         String sql = "SELECT * FROM url_checks WHERE url_id = ? ORDER BY created_at DESC";
 
