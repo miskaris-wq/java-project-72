@@ -9,12 +9,17 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.sql.ResultSet;
-import java.util.*;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Optional;
 
 public final class UrlCheckRepository extends BaseRepository {
 
     public UrlCheckRepository() {
-        super(); // использует BaseRepository.dataSource
+        super();
     }
 
     public UrlCheckRepository(DataSource dataSource) {

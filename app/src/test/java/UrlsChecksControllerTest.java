@@ -89,7 +89,7 @@ public final class UrlsChecksControllerTest {
 
             var showResponse = client.get("/urls/" + existingUrl.get("id"));
             assertThat(showResponse.code()).isEqualTo(200);
-            assert showResponse.body() != null;
+            assertThat(showResponse.body()).isNotNull();
             String body = showResponse.body().string();
 
             assertThat(body).contains("Test page");

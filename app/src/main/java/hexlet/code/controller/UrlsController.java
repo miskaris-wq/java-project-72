@@ -11,18 +11,14 @@ import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-
 
 public class UrlsController {
-
 
     public static void list(Context ctx) throws SQLException {
         var urlRepository = new UrlRepository();
         var urlCheckRepository = new UrlCheckRepository();
 
         var urls = urlRepository.findAllOrderedById();
-
         Map<Long, UrlCheck> lastChecks = urlCheckRepository.findLatestChecks();
 
         var model = new HashMap<String, Object>();
@@ -30,15 +26,7 @@ public class UrlsController {
         model.put("lastChecks", lastChecks);
         model.put("ctx", ctx);
 
-        var flash = ctx.consumeSessionAttribute("flash");
-        if (flash != null) {
-            model.put("flash", flash);
-        }
-
-        var info = ctx.consumeSessionAttribute("info");
-        if (info != null) {
-            model.put("info", info);
-        }
+        populateSessionMessages(ctx, model, "flash", "flash-type");
 
         ctx.render("urls/index.jte", model);
     }
@@ -47,32 +35,38 @@ public class UrlsController {
         var inputUrl = ctx.formParam("url");
 
         if (inputUrl == null || inputUrl.trim().isEmpty()) {
-            ctx.sessionAttribute("error", "URL не должен быть пустым");
+            ctx.sessionAttribute("flash", "URL не должен быть пустым");
+            ctx.sessionAttribute("flash-type", "danger");
             ctx.redirect("/");
             return;
         }
 
+        String normalizedUrl;
         try {
-            String normalizedUrl = UrlUtils.normalizeUrl(inputUrl.trim());
-            var repository = new UrlRepository();  // ✅
-
-            if (repository.findByName(normalizedUrl).isPresent()) {
-                ctx.sessionAttribute("flash", "Страница уже существует");
-                ctx.redirect("/urls");
-                return;
-            }
-
-            var url = new Url();
-            url.setName(normalizedUrl);
-            repository.save(url);
-
-            ctx.sessionAttribute("info", "Страница успешно добавлена");
-            ctx.redirect("/urls");
-
+            normalizedUrl = UrlUtils.normalizeUrl(inputUrl.trim());
         } catch (URISyntaxException e) {
-            ctx.sessionAttribute("error", "Некорректный URL");
+            ctx.sessionAttribute("flash", "Некорректный URL");
+            ctx.sessionAttribute("flash-type", "danger");
             ctx.redirect("/");
+            return;
         }
+
+        var repository = new UrlRepository();
+
+        if (repository.findByName(normalizedUrl).isPresent()) {
+            ctx.sessionAttribute("flash", "Страница уже существует");
+            ctx.sessionAttribute("flash-type", "warning");
+            ctx.redirect("/urls");
+            return;
+        }
+
+        var url = new Url();
+        url.setName(normalizedUrl);
+        repository.save(url);
+
+        ctx.sessionAttribute("flash", "Страница успешно добавлена");
+        ctx.sessionAttribute("flash-type", "success");
+        ctx.redirect("/urls");
     }
 
     public static void show(Context ctx) throws SQLException {
@@ -94,17 +88,17 @@ public class UrlsController {
         model.put("checks", checks);
         model.put("ctx", ctx);
 
-        var flash = ctx.consumeSessionAttribute("flash");
-        if (flash != null) {
-            model.put("flash", flash);
-        }
-
-        var error = ctx.consumeSessionAttribute("error");
-        if (error != null) {
-            model.put("error", error);
-        }
+        populateSessionMessages(ctx, model, "flash", "flash-type");
 
         ctx.render("urls/show.jte", model);
     }
 
+    private static void populateSessionMessages(Context ctx, Map<String, Object> model, String... keys) {
+        for (String key : keys) {
+            var value = ctx.consumeSessionAttribute(key);
+            if (value != null) {
+                model.put(key, value);
+            }
+        }
+    }
 }
