@@ -1,19 +1,17 @@
 package hexlet.code.controller;
 
+import hexlet.code.dto.BasePage;
 import io.javalin.http.Context;
-
-import java.util.HashMap;
+import java.util.Collections;
 
 public class RootController {
     public static void welcome(Context ctx) {
-        var model = new HashMap<String, Object>();
-        model.put("ctx", ctx);
+        var page = new BasePage();
 
-        var error = ctx.consumeSessionAttribute("error");
-        if (error != null) {
-            model.put("error", error);
-        }
+        page.setFlash(ctx.consumeSessionAttribute("flash"));
+        page.setError(ctx.consumeSessionAttribute("error"));
+        page.setInfo(ctx.consumeSessionAttribute("info"));
 
-        ctx.render("index.jte", model);
+        ctx.render("index.jte", Collections.singletonMap("page", page));
     }
 }
