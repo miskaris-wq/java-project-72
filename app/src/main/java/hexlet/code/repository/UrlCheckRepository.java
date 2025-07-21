@@ -70,15 +70,12 @@ public final class UrlCheckRepository extends BaseRepository {
     }
 
     public void save(UrlCheck check) throws SQLException {
-        String sql = """
-        INSERT INTO url_checks (url_id, status_code, title, h1, description, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """;
+        var sql = "INSERT INTO url_checks (url_id, status_code, title, h1, description, created_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (var connection = ds.getConnection();
              var statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            // Устанавливаем текущую дату при сохранении
             var createdAt = LocalDateTime.now();
             statement.setLong(1, check.getUrlId());
             statement.setObject(2, check.getStatusCode(), Types.INTEGER);
@@ -118,12 +115,7 @@ public final class UrlCheckRepository extends BaseRepository {
     }
 
     public UrlCheck findLatestByUrlId(long urlId) throws SQLException {
-        String sql = """
-            SELECT * FROM url_checks
-            WHERE url_id = ?
-            ORDER BY created_at DESC
-            LIMIT 1
-            """;
+        String sql = "SELECT * FROM url_checks WHERE url_id = ? ORDER BY created_at DESC LIMIT 1";
 
         try (var connection = ds.getConnection();
              var statement = connection.prepareStatement(sql)) {
