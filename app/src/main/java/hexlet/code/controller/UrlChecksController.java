@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 
 import java.sql.SQLException;
-import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Slf4j
 public class UrlChecksController {
@@ -34,10 +34,10 @@ public class UrlChecksController {
             check.setStatusCode(response.getStatus());
             check.setTitle(document.title());
             check.setH1(document.selectFirst("h1") != null
-                    ? document.selectFirst("h1").text() : null);
+                    ? Objects.requireNonNull(document.selectFirst("h1")).text() : null);
             check.setDescription(document.selectFirst("meta[name=description]") != null
-                    ? document.selectFirst("meta[name=description]").attr("content") : null);
-            check.setCreatedAt(LocalDateTime.now());
+                    ? Objects.requireNonNull(document.selectFirst("meta[name=description]"))
+                    .attr("content") : null);
 
             var checkRepository = new UrlCheckRepository();
             checkRepository.save(check);

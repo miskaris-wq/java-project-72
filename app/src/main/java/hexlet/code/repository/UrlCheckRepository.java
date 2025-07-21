@@ -1,15 +1,13 @@
 package hexlet.code.repository;
 
 import hexlet.code.model.UrlCheck;
-
 import javax.sql.DataSource;
-
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.sql.ResultSet;
-
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -73,25 +71,28 @@ public final class UrlCheckRepository extends BaseRepository {
 
     public void save(UrlCheck check) throws SQLException {
         String sql = """
-            INSERT INTO url_checks (url_id, status_code, title, h1, description, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """;
+        INSERT INTO url_checks (url_id, status_code, title, h1, description, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """;
 
         try (var connection = ds.getConnection();
              var statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
+            // Устанавливаем текущую дату при сохранении
+            var createdAt = LocalDateTime.now();
             statement.setLong(1, check.getUrlId());
             statement.setObject(2, check.getStatusCode(), Types.INTEGER);
             statement.setString(3, check.getTitle());
             statement.setString(4, check.getH1());
             statement.setString(5, check.getDescription());
-            statement.setTimestamp(6, Timestamp.valueOf(check.getCreatedAt()));
+            statement.setTimestamp(6, Timestamp.valueOf(createdAt));
 
             statement.executeUpdate();
 
             try (var generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     check.setId(generatedKeys.getLong(1));
+                    check.setCreatedAt(createdAt);
                 }
             }
         }
@@ -146,7 +147,8 @@ public final class UrlCheckRepository extends BaseRepository {
         check.setTitle(rs.getString("title"));
         check.setH1(rs.getString("h1"));
         check.setDescription(rs.getString("description"));
-        check.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+        var createdAt = rs.getTimestamp("created_at");
+        check.setCreatedAt(createdAt != null ? createdAt.toLocalDateTime() : null);
         return check;
     }
 }
