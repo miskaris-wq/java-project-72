@@ -1,7 +1,6 @@
 ### Hexlet tests and linter status:
 [![Actions Status](https://github.com/miskaris-wq/java-project-72/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/miskaris-wq/java-project-72/actions)
 
-
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=miskaris-wq_java-project-72&metric=coverage)](https://sonarcloud.io/summary/new_code?id=miskaris-wq_java-project-72)
 
 # java-project-72: Hexlet Project - Pages Analyzer
@@ -9,6 +8,10 @@
 ## Description
 
 This repository contains a Java project completed as part of the Hexlet training program. This Java web app built with Javalin lets users add URLs, perform status checks by fetching and parsing page content, and view the history of these checks.
+
+## Watch the working project
+
+There is the link where you can see how the project works: https://java-page-analyzer-ru.hexlet.app/
 
 ## Project Goal
 
@@ -85,5 +88,5 @@ The project has no external dependencies other than the standard Java library.
 
 ## Acknowledgments
 
-Thanks to Hexlet for the educational program and the provided platform for developing this project._
+Thanks to Hexlet for the educational program and the provided platform for developing this project.
 

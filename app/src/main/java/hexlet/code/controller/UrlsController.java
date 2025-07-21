@@ -4,7 +4,7 @@ import hexlet.code.model.Url;
 import hexlet.code.model.UrlCheck;
 import hexlet.code.repository.UrlCheckRepository;
 import hexlet.code.repository.UrlRepository;
-import hexlet.code.utils.UrlUtils;
+import hexlet.code.util.UrlUtils;
 import io.javalin.http.Context;
 
 import java.net.URISyntaxException;

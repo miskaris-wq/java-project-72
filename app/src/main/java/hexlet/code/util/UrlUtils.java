@@ -1,4 +1,4 @@
-package hexlet.code.utils;
+package hexlet.code.util;
 
 import java.net.MalformedURLException;
 import java.net.URI;
