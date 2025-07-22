@@ -8,9 +8,17 @@ public class RootController {
     public static void welcome(Context ctx) {
         var page = new BasePage();
 
-        page.setFlash(ctx.consumeSessionAttribute("flash"));
-        page.setError(ctx.consumeSessionAttribute("error"));
-        page.setInfo(ctx.consumeSessionAttribute("info"));
+        String flash = ctx.consumeSessionAttribute("flash");
+        String type = ctx.consumeSessionAttribute("flash-type");
+
+        if (flash != null && type != null) {
+            switch (type.toLowerCase().trim()) {
+                case "danger" -> page.setError(flash);
+                case "success" -> page.setInfo(flash);
+                case "info" -> page.setFlash(flash);
+                default -> page.setFlash(flash);
+            }
+        }
 
         ctx.render("index.jte", Collections.singletonMap("page", page));
     }

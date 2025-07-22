@@ -90,9 +90,8 @@ public final class UrlRepository extends BaseRepository {
     }
 
     private Url mapUrl(ResultSet rs) throws SQLException {
-        Url url = new Url();
+        Url url = new Url(rs.getString("name"));
         url.setId(rs.getLong("id"));
-        url.setName(rs.getString("name"));
         url.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
         return url;
     }

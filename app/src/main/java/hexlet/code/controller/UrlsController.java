@@ -1,5 +1,6 @@
 package hexlet.code.controller;
 
+import hexlet.code.dto.BasePage;
 import hexlet.code.model.Url;
 import hexlet.code.model.UrlCheck;
 import hexlet.code.repository.UrlCheckRepository;
@@ -21,15 +22,29 @@ public class UrlsController {
         var urls = urlRepository.findAllOrderedById();
         Map<Long, UrlCheck> lastChecks = urlCheckRepository.findLatestChecks();
 
+        var page = new BasePage();
+        String flash = ctx.consumeSessionAttribute("flash");
+        String type = ctx.consumeSessionAttribute("flash-type");
+
+        if (flash != null && type != null) {
+            switch (type.toLowerCase().trim()) {
+                case "danger" -> page.setError(flash);
+                case "success" -> page.setInfo(flash);
+                case "info" -> page.setFlash(flash);
+                default -> page.setFlash(flash);
+            }
+
+        }
+
         var model = new HashMap<String, Object>();
         model.put("urls", urls);
         model.put("lastChecks", lastChecks);
         model.put("ctx", ctx);
-
-        populateSessionMessages(ctx, model, "flash", "flash-type");
+        model.put("page", page);
 
         ctx.render("urls/index.jte", model);
     }
+
 
     public static void create(Context ctx) throws SQLException {
         var inputUrl = ctx.formParam("url");
@@ -55,13 +70,12 @@ public class UrlsController {
 
         if (repository.findByName(normalizedUrl).isPresent()) {
             ctx.sessionAttribute("flash", "Страница уже существует");
-            ctx.sessionAttribute("flash-type", "warning");
+            ctx.sessionAttribute("flash-type", "info");
             ctx.redirect("/urls");
             return;
         }
 
-        var url = new Url();
-        url.setName(normalizedUrl);
+        var url = new Url(normalizedUrl);
         repository.save(url);
 
         ctx.sessionAttribute("flash", "Страница успешно добавлена");
@@ -81,17 +95,31 @@ public class UrlsController {
             return;
         }
 
+        var url = urlOptional.get();
         var checks = checkRepository.findAllByUrlId(id);
 
+        var page = new BasePage();
+        String flash = ctx.consumeSessionAttribute("flash");
+        String type = ctx.consumeSessionAttribute("flash-type");
+
+        if (flash != null && type != null) {
+            switch (type.toLowerCase().trim()) {
+                case "danger" -> page.setError(flash);
+                case "success" -> page.setInfo(flash);
+                case "info" -> page.setFlash(flash);
+                default -> page.setFlash(flash);
+            }
+        }
+
         var model = new HashMap<String, Object>();
-        model.put("url", urlOptional.get());
+        model.put("url", url);
         model.put("checks", checks);
         model.put("ctx", ctx);
-
-        populateSessionMessages(ctx, model, "flash", "flash-type");
+        model.put("page", page);
 
         ctx.render("urls/show.jte", model);
     }
+
 
     private static void populateSessionMessages(Context ctx, Map<String, Object> model, String... keys) {
         for (String key : keys) {
